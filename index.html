@@ -1,0 +1,328 @@
+<!-- Logika JavaScript -->
+<script>
+    // URL Google Apps Script
+    const API_URL = "https://script.google.com/macros/s/AKfycbziothSrGzNWIkC19Rmu2WDSeNGbRHXtlbnrn2isF392RdPjIW2tZbpGsteRIKSMF6E-g/exec";
+
+    // Nomor WhatsApp Admin
+    const WA_ADMIN = "6283873099640";
+
+    const foods = [
+        {
+            id: 1,
+            name: "Margherita Pizza",
+            category: "Main Course",
+            price: 149000,
+            description: "Classic Italian pizza with fresh mozzarella, basil, and tomato sauce",
+            image: "https://images.unsplash.com/photo-1579751626657-72bc17010498?auto=format&fit=crop&w=700&q=80",
+            badge: "Popular",
+            label: "Veg"
+        },
+        {
+            id: 2,
+            name: "Grilled Salmon",
+            category: "Main Course",
+            price: 249000,
+            description: "Fresh Atlantic salmon with lemon butter sauce and seasonal vegetables",
+            image: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=700&q=80",
+            badge: "Popular",
+            label: ""
+        },
+        {
+            id: 3,
+            name: "Caesar Salad",
+            category: "Appetizers",
+            price: 99000,
+            description: "Crispy romaine lettuce, parmesan cheese, croutons, and Caesar dressing",
+            image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=700&q=80",
+            badge: "",
+            label: "Veg"
+        },
+        {
+            id: 4,
+            name: "Beef Burger",
+            category: "Main Course",
+            price: 169000,
+            description: "Juicy beef patty with lettuce, tomato, cheese, and special sauce",
+            image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=700&q=80",
+            badge: "Popular",
+            label: ""
+        },
+        {
+            id: 5,
+            name: "Chocolate Lava Cake",
+            category: "Desserts",
+            price: 89000,
+            description: "Warm chocolate cake with a gooey center, served with vanilla ice cream",
+            image: "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=700&q=80",
+            badge: "Popular",
+            label: "Veg"
+        },
+        {
+            id: 6,
+            name: "Thai Green Curry",
+            category: "Specials",
+            price: 189000,
+            description: "Spicy coconut curry with vegetables and jasmine rice",
+            image: "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=700&q=80",
+            badge: "",
+            label: "Spicy"
+        },
+        {
+            id: 7,
+            name: "Mango Smoothie",
+            category: "Beverages",
+            price: 59000,
+            description: "Fresh mango blended with yogurt and honey",
+            image: "https://images.unsplash.com/photo-1505252585461-04db1eb84625?auto=format&fit=crop&w=700&q=80",
+            badge: "",
+            label: "Vegan"
+        },
+        {
+            id: 8,
+            name: "Bruschetta",
+            category: "Appetizers",
+            price: 79000,
+            description: "Toasted bread topped with fresh tomatoes, garlic, and basil",
+            image: "https://images.unsplash.com/photo-1572695157366-5e585ab2b69f?auto=format&fit=crop&w=700&q=80",
+            badge: "",
+            label: "Veg"
+        }
+    ];
+
+    let selectedCategory = "All";
+    let cart = [];
+
+    function formatPrice(price) {
+        return new Intl.NumberFormat("id-ID", {
+            style: "currency",
+            currency: "IDR",
+            maximumFractionDigits: 0
+        }).format(price);
+    }
+
+    function renderFoods() {
+        const grid = document.getElementById("menuGrid");
+        const search = document.getElementById("searchInput").value.toLowerCase();
+
+        const filtered = foods.filter(food => {
+            const matchesCategory =
+                selectedCategory === "All" ||
+                food.category === selectedCategory;
+
+            const matchesSearch =
+                food.name.toLowerCase().includes(search) ||
+                food.description.toLowerCase().includes(search);
+
+            return matchesCategory && matchesSearch;
+        });
+
+        grid.innerHTML = "";
+
+        if (filtered.length === 0) {
+            grid.innerHTML =
+                '<div class="empty-message" style="display:block">No dishes found.</div>';
+            return;
+        }
+
+        filtered.forEach(food => {
+            const card = document.createElement("div");
+            card.className = "food-card";
+
+            card.innerHTML = `
+                <div class="food-image">
+                    <img
+                        src="${food.image}"
+                        alt="${food.name}"
+                        loading="lazy"
+                        onerror="this.src='https://placehold.co/600x400/f3f0ec/555?text=Zatria+Food'"
+                    >
+                    ${food.badge ? `<span class="badge">${food.badge}</span>` : ""}
+                    ${food.label ? `<span class="food-label">${food.label}</span>` : ""}
+                </div>
+                <div class="food-info">
+                    <h3>${food.name}</h3>
+                    <p>${food.description}</p>
+                    <div class="price">${formatPrice(food.price)}</div>
+                    <button class="add-cart" onclick="addToCart(${food.id})">
+                        <span>＋</span> Add to Cart
+                    </button>
+                </div>
+            `;
+
+            grid.appendChild(card);
+        });
+    }
+
+    function selectCategory(category, button) {
+        selectedCategory = category;
+
+        document.querySelectorAll(".category").forEach(btn => {
+            btn.classList.remove("active");
+        });
+
+        button.classList.add("active");
+        renderFoods();
+    }
+
+    function filterFoods() {
+        renderFoods();
+    }
+
+    function addToCart(id) {
+        const food = foods.find(item => item.id === id);
+        const existing = cart.find(item => item.id === id);
+
+        if (existing) {
+            existing.quantity++;
+        } else {
+            cart.push({
+                ...food,
+                quantity: 1
+            });
+        }
+
+        updateCart();
+    }
+
+    function updateCart() {
+        const count = cart.reduce(
+            (sum, item) => sum + item.quantity,
+            0
+        );
+
+        document.getElementById("cartCount").textContent = count;
+        document.getElementById("orderCount").textContent = count;
+
+        renderOrders();
+    }
+
+    function renderOrders() {
+        const list = document.getElementById("ordersList");
+        const totalElement = document.getElementById("orderTotal");
+        const checkoutButton = document.getElementById("checkoutButton");
+
+        if (cart.length === 0) {
+            list.innerHTML =
+                '<p class="no-orders">Keranjang masih kosong. Silakan pilih makanan!</p>';
+
+            totalElement.textContent = "";
+            checkoutButton.style.display = "none";
+            return;
+        }
+
+        checkoutButton.style.display = "inline-block";
+        list.innerHTML = "";
+
+        cart.forEach(item => {
+            const row = document.createElement("div");
+            row.className = "order-item";
+
+            row.innerHTML = `
+                <div>
+                    <strong>${item.name}</strong><br>
+                    ${formatPrice(item.price)} × ${item.quantity}
+                </div>
+                <div>
+                    <strong>${formatPrice(item.price * item.quantity)}</strong>
+                    <button onclick="removeFromCart(${item.id})">Remove</button>
+                </div>
+            `;
+
+            list.appendChild(row);
+        });
+
+        const total = cart.reduce(
+            (sum, item) => sum + item.price * item.quantity,
+            0
+        );
+
+        totalElement.textContent = "Total: " + formatPrice(total);
+    }
+
+    function removeFromCart(id) {
+        cart = cart.filter(item => item.id !== id);
+        updateCart();
+    }
+
+    function showMenu() {
+        document.getElementById("menuSection").style.display = "block";
+        document.getElementById("ordersPanel").style.display = "none";
+
+        document.getElementById("menuTab").classList.add("active");
+        document.getElementById("ordersTab").classList.remove("active");
+    }
+
+    function showOrders() {
+        document.getElementById("menuSection").style.display = "none";
+        document.getElementById("ordersPanel").style.display = "block";
+
+        document.getElementById("ordersTab").classList.add("active");
+        document.getElementById("menuTab").classList.remove("active");
+
+        renderOrders();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // Checkout melalui WhatsApp Admin
+    function checkout() {
+        if (cart.length === 0) {
+            alert("Keranjang masih kosong!");
+            return;
+        }
+
+        const total = cart.reduce(
+            (sum, item) => sum + item.price * item.quantity,
+            0
+        );
+
+        let message = "Halo Zatria! Saya ingin memesan makanan:\n\n";
+
+        cart.forEach((item, index) => {
+            message += `${index + 1}. ${item.name}\n`;
+            message += `   Jumlah: ${item.quantity}\n`;
+            message += `   Harga: ${formatPrice(item.price * item.quantity)}\n\n`;
+        });
+
+        message += `Total Pesanan: ${formatPrice(total)}\n\n`;
+        message += "Mohon konfirmasi pesanan saya. Terima kasih!";
+
+        const whatsappURL =
+            "https://wa.me/" +
+            WA_ADMIN +
+            "?text=" +
+            encodeURIComponent(message);
+
+        window.open(whatsappURL, "_blank");
+
+        // Mengirim data pesanan ke Google Apps Script.
+        // Format kolom dan nama sheet harus sesuai dengan Apps Script Anda.
+        const orderData = {
+            tanggal: new Date().toISOString(),
+            toko: "Zatria",
+            items: cart.map(item => ({
+                id: item.id,
+                nama: item.name,
+                kategori: item.category,
+                harga: item.price,
+                jumlah: item.quantity,
+                subtotal: item.price * item.quantity
+            })),
+            total: total
+        };
+
+        fetch(API_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: {
+                "Content-Type": "text/plain;charset=utf-8"
+            },
+            body: JSON.stringify(orderData)
+        }).catch(error => {
+            console.error("Pengiriman data pesanan gagal:", error);
+        });
+    }
+
+    // Tampilkan menu dan keranjang saat halaman dibuka.
+    renderFoods();
+    updateCart();
+</script>
